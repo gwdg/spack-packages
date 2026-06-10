@@ -30,6 +30,8 @@ class Cpio(AutotoolsPackage, GNUMirrorPackage):
 
     build_directory = "spack-build"
 
+    patch("gcc15-c23.patch", when="%gcc@15:")
+
     def patch(self):
         """Fix mutiple definition of char *program_name for gcc@10: and clang"""
         filter_file(r"char \*program_name;", "", "src/global.c")

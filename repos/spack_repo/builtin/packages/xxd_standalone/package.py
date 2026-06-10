@@ -32,3 +32,10 @@ class XxdStandalone(MakefilePackage):
     def install(self, spec, prefix):
         mkdirp(prefix.bin)
         install(os.path.join(self.build_directory, "src", "xxd", "xxd"), prefix.bin)
+
+    def setup_build_environment(self, env: EnvironmentModifications) -> None:
+        super().setup_build_environment(env)
+
+        if self.spec.satisfies("@:8.2.1201 %gcc@15:"):
+            # gcc@15: is -std=gnu23 by default
+            env.append_flags("CFLAGS", "-std=gnu17")

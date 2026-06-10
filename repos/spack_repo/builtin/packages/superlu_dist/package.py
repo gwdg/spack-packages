@@ -178,6 +178,9 @@ class SuperluDist(CMakePackage, CudaPackage, ROCmPackage):
             # see https://reviews.llvm.org/D122983
             #
             flags.append("-Wno-error=implicit-function-declaration")
+        if name == "cflags" and (self.spec.satisfies("%gcc@15:")):
+            # gcc@15: is -std=gnu23 by default
+            flags.append("-std=gnu17")
         return (None, None, flags)
 
     examples_src_dir = "EXAMPLE"

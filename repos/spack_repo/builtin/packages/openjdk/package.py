@@ -407,7 +407,7 @@ class Openjdk(Package):
     """The free and opensource java implementation"""
 
     homepage = "https://openjdk.org/"
-    preferred_prefix = "25."
+    preferred_prefix = "17."
 
     preferred_defined = False
     for ver, packages in _versions.items():
@@ -531,7 +531,7 @@ class Openjdk(Package):
             if os.path.exists(sys_certs):
                 if os.path.exists(pkg_conf):
                     os.remove(pkg_conf)
-                symlink(sys_certs, pkg_conf)
+                os.symlink(sys_certs, pkg_conf)
 
     def setup_run_environment(self, env: EnvironmentModifications) -> None:
         """Set JAVA_HOME."""

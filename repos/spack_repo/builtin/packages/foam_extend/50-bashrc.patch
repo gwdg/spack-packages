@@ -1,0 +1,14 @@
+--- a/etc/bashrc
++++ b/etc/bashrc
+@@ -68,10 +68,10 @@ fi
+ # The old dirs to be cleaned from the various environment variables
+ # - remove anything under top-level directory.
+ # NB: the WM_PROJECT_INST_DIR might not be identical between versions
+-foamOldDirs="$FOAM_INST_DIR $HOME/$WM_PROJECT/$USER"
++foamOldDirs="$FOAM_INST_DIR/$WM_PROJECT-$WM_FORK* $HOME/$WM_PROJECT/$USER"
+ if [ "$WM_PROJECT_INST_DIR" != "$FOAM_INST_DIR" ]
+ then
+-    foamOldDirs="$WM_PROJECT_INST_DIR $foamOldDirs"
++    foamOldDirs="$WM_PROJECT_INST_DIR/$WM_PROJECT-$WM_FORK* $foamOldDirs"
+ fi
+

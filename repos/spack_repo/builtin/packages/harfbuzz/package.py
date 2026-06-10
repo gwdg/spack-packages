@@ -34,6 +34,8 @@ class Harfbuzz(MesonPackage, AutotoolsPackage, CMakePackage):
 
     maintainers("AlexanderRichert-NOAA")
 
+    version("13.1.1", sha256="e7f3b8bac3fdcc529985be8e84fbd65c675ac47ee58512b15a5dd620c79ffe2a")
+    version("12.3.2", sha256="6f6db164359a2da5a84ef826615b448b33e6306067ad829d85d5b0bf936f1bb8")
     version("11.5.1", sha256="972a60a8d274d49e70361da6920c3a73dfb0fb4387f6c6811906a47ba634d8a1")
     version("11.4.1", sha256="7aafab93115eb56cdc9a931ab7d19ff60d7f2937b599d140f17236f374e32698")
     version("11.3.3", sha256="e1fbca6b32a91ae91ecd9eb2ca8d47a5bfe2b1cb2e54855ab7a0b464919ef358")
@@ -79,6 +81,8 @@ class Harfbuzz(MesonPackage, AutotoolsPackage, CMakePackage):
         description="Enable CoreText shaper backend on macOS",
     )
     variant("shared", default=True, when="build_system=cmake", description="Build shared harfbuzz")
+
+    #    patch('cairo.patch')
 
     with when("build_system=cmake"):
         with when("platform=windows"):

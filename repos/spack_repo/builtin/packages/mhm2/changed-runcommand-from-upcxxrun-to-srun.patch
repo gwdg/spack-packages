@@ -1,0 +1,22 @@
+--- a/src/mhm2.py	2023-10-04 02:54:49.000000000 +0200
++++ b/src/mhm2.py	2023-11-08 12:38:32.611141988 +0100
+@@ -461,7 +461,7 @@
+         print("Overriding to use", options.nodes, "nodes, instead of the detected", num_nodes)
+         num_nodes = options.nodes
+ 
+-    cmd = ['upcxx-run', '-n', str(options.procs), '-N', str(num_nodes)]
++    cmd = ['srun', '-n', str(options.procs), '-N', str(num_nodes)]
+ 
+     # special spawner for summit that auto-detects the job size and calls jsrun to properly bind cpus, gpus and hca network devices
+     if 'LMOD_SYSTEM_NAME' in os.environ and os.environ['LMOD_SYSTEM_NAME'] == "summit":
+@@ -476,10 +476,6 @@
+             os.environ['MHM2_PIN'] = 'none' # default of numa is suboptimal for summit
+         print("This is Summit - executing custom script upcxx-jsrun to spawn the job", cmd)
+ 
+-    if 'UPCXX_SHARED_HEAP_SIZE' not in os.environ:
+-        cmd.extend(['-shared-heap', options.shared_heap])
+-        #os.environ['UPCXX_SHARED_HEAP_SIZE'] = options.shared_heap
+-
+     # special spawning for perlmutter GPU nodes that requires srun, not upcxx-run for now
+     if 'NERSC_HOST' in os.environ and os.environ['NERSC_HOST'] == 'perlmutter' and 'SLURM_JOB_PARTITION' in os.environ and 'gpu' in os.environ['SLURM_JOB_PARTITION']:
+         cmd = ['upcxx-srun', '-n', str(options.procs), '-N', str(num_nodes), '--gpus-per-node=4', '--', os.path.split(sys.argv[0])[0] + '/mhm2-mps-wrapper-perlmutter.sh']

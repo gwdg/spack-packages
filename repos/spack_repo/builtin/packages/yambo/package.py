@@ -20,13 +20,14 @@ class Yambo(AutotoolsPackage):
     to its release under the GPL license, yambo was known as SELF.
     """
 
-    homepage = "https://www.yambo-code.org/index.php"
+    homepage = "https://www.yambo-code.org/"
     url = "https://github.com/yambo-code/yambo/archive/4.2.2.tar.gz"
 
     maintainers("LydDeb")
 
     license("GPL-2.0-or-later")
 
+    version("5.3.0", sha256="97b6867c28af6ea690bb02446745e817adcedf95bcd568f132ef3510abbb1cfe")
     version("5.2.4", sha256="7c3f2602389fc29a0d8570c2fe85fe3768d390cfcbb2d371e83e75c6c951d5fc")
     version("5.2.3", sha256="a6168d1fa820af857ac51217bd6ad26dda4cc89c07e035bd7dc230038ae1ab9c")
     version("5.2.1", sha256="0ac362854313927d75bbf87be98ff58447f3805f79724c38dc79df07f03a7046")
@@ -87,6 +88,15 @@ class Yambo(AutotoolsPackage):
     sanity_check_is_file = ["bin/yambo"]
 
     resource(
+        when="@5.3.0",
+        name="ydriver",
+        url="https://github.com/yambo-code/Ydriver/archive/refs/tags/1.4.3.tar.gz",
+        sha256="bc533beae2b448ddcad217354484ed67fea45602216346494ccd05351d7a7aea",
+        destination="ydriver_archive",
+        placement="archive",
+        expand=False,
+    )
+    resource(
         when="@5.2.4",
         name="ydriver",
         url="https://github.com/yambo-code/Ydriver/archive/refs/tags/1.4.2.tar.gz",
@@ -104,31 +114,20 @@ class Yambo(AutotoolsPackage):
         placement="archive",
         expand=False,
     )
-    # iotk archive is contained inside this git repository
-    resource(
-        when="@5.2",
-        name="iotk",
-        git="https://github.com/yambo-code/yambo-libraries.git",
-        destination="yambo_libraries",
-        expand=False,
-    )
 
     # ydriver-1.1.0 is required by yambo 5.1.1 but the oldest release in
     # https://github.com/yambo-code/Ydriver is 1.2.0
     # So, the air-gapped installation is only available since yambo@5.2.1
-    @when("@5.2")
+    @when("@5.2:")
     @run_before("autoreconf")
     def setup_archives(self):
+        if self.spec.satisfies("@5.3.0"):
+            shutil.move("ydriver_archive/archive/1.4.3.tar.gz", "lib/archive/Ydriver-1.4.3.tar.gz")
         if self.spec.satisfies("@5.2.4"):
             shutil.move("ydriver_archive/archive/1.4.2.tar.gz", "lib/archive/Ydriver-1.4.2.tar.gz")
         if self.spec.satisfies("@5.2.1:5.2.3"):
             shutil.move("ydriver_archive/archive/1.2.0.tar.gz", "lib/archive/Ydriver-1.2.0.tar.gz")
-        shutil.move(
-            "yambo_libraries/yambo-libraries/external/iotk-y1.2.2.tar.gz",
-            "lib/archive/iotk-y1.2.2.tar.gz",
-        )
         shutil.rmtree("ydriver_archive")
-        shutil.rmtree("yambo_libraries")
 
     def enable_or_disable_time(self, activated):
         return "--enable-time-profile" if activated else "--disable-time-profile"
@@ -244,3 +243,10 @@ class Yambo(AutotoolsPackage):
         install_tree("lib", prefix.lib)
         install_tree("include", prefix.include)
         install_tree("driver", prefix.driver)
+
+    def setup_build_environment(self, env: EnvironmentModifications) -> None:
+        super().setup_build_environment(env)
+
+        if self.spec.satisfies("@:5.2.4 %gcc@15:"):
+            # gcc@15: is -std=gnu23 by default
+            env.append_flags("CFLAGS", "-std=gnu17")

@@ -142,8 +142,16 @@ class NetcdfFortran(AutotoolsPackage):
                 # configuration failure, we set the following cache variable:
                 config_args.append("ac_cv_func_MPI_File_open=yes")
 
+            config_args = [
+                v for v in config_args if not v.startswith(("CC=", "CXX=", "F77=", "FC="))
+            ]
+            config_args.append("CC={0}".format(self.spec["mpi"].mpicc))
+            config_args.append("CXX={0}".format(self.spec["mpi"].mpicxx))
+            config_args.append("F77={0}".format(self.spec["mpi"].mpif77))
+            config_args.append("FC={0}".format(self.spec["mpi"].mpifc))
+
         if "~shared" in netcdf_c_spec:
-            nc_config = which("nc-config", required=True)
+            nc_config = which("nc-config")
             config_args.append("LIBS={0}".format(nc_config("--libs", output=str).strip()))
             if any(s in netcdf_c_spec for s in ["+mpi", "+parallel-netcdf", "^hdf5+mpi~shared"]):
                 config_args.append("CC=%s" % self.spec["mpi"].mpicc)

@@ -17,6 +17,7 @@ class Repeatmasker(Package):
 
     license("OSL-2.1")
 
+    version("4.2.3", sha256="832e2b22aef6763ef7d5dd2771eef22f7dd8b9738bea0e1d81295aa511b61e6a")
     version("4.1.5", sha256="16e07f9efd99adf15f4492b0e334df5ad4ea6ca38ddf62bdd180d257f2f4753f")
     version("4.1.2-p1", sha256="4be54bf6c050422b211e24a797feb06fd7954c8b4ee6f3ece94cb6faaf6b0e96")
     version("4.0.9", sha256="8d67415d89ed301670b7632ea411f794c6e30d8ed0f007a726c4b0a39c8638e5")
@@ -44,6 +45,7 @@ class Repeatmasker(Package):
             url = "https://www.repeatmasker.org/RepeatMasker/RepeatMasker-open-{0}.tar.gz"
             return url.format(version.dashed)
 
+    @when("@:4.0")
     def install(self, spec, prefix):
         # Config questions consist of:
         #
@@ -103,3 +105,43 @@ class Repeatmasker(Package):
             filter_file("#!.*", "#!%s" % spec["perl"].command, f)
 
         install_tree(".", prefix.bin)
+
+    @when("@4.1.5:")
+    def install(self, spec, prefix):
+        # fix perl paths
+        # every sbang points to perl, so a regex will suffice
+        for f in glob.glob("*.pm"):
+            filter_file("#!.*", "#!%s" % spec["perl"].command, f)
+
+        install_tree(".", prefix.bin)
+
+        config_args = []
+
+        # LIBDIR
+        config_args.append("-libdir")
+        config_args.append(prefix.bin.Libraries)
+
+        # TRF
+        config_args.append("-trf_prgm")
+        config_args.append(self.spec["trf"].prefix.bin.trf)
+
+        # RMBLAST
+        config_args.append("-rmblast_dir")
+        config_args.append(self.spec["ncbi-rmblastn"].prefix.bin)
+
+        config_args.append("-default_search_engine")
+        config_args.append("rmblast")
+
+        # HMMER
+        config_args.append("-hmmer_dir")
+        config_args.append(self.spec["hmmer"].prefix.bin)
+
+        # CROSSMATCH
+        if spec.satisfies("+crossmatch"):
+            config_args.append("-crossmatch_dir")
+            config_args.append(self.spec["phrap-crossmatch-swat"].prefix.bin)
+
+        perl = which("perl")
+        perl("configure", *config_args)
+
+        install("RepeatMaskerConfig.pm", prefix.bin)

@@ -98,7 +98,7 @@ class Opengl(BundlePackage):
             header_name = "OpenGL/gl"
         else:
             header_name = "GL/gl"
-        return find_headers(header_name, root=self.prefix, recursive=True)
+        return find_headers(header_name, root=self.prefix.include, recursive=True)
 
     @property
     def gl_libs(self):
@@ -109,4 +109,6 @@ class Opengl(BundlePackage):
             lib_name = "libOpenGL"
         else:
             lib_name = "libGL"
-        return find_libraries(lib_name, root=self.prefix, recursive=True)
+        return find_libraries(lib_name, root=self.prefix.lib64, recursive=True) + find_libraries(
+            lib_name, root=self.prefix.lib, recursive=True
+        )

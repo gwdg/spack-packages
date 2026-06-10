@@ -84,3 +84,10 @@ class NcbiRmblastn(AutotoolsPackage):
             "--with-projects=scripts/projects/rmblastn/project.lst",
         ]
         return args
+
+    def setup_build_environment(self, env: EnvironmentModifications) -> None:
+        super().setup_build_environment(env)
+
+        if self.spec.satisfies("@:2.14.1 %gcc@15:"):
+            # gcc@15: -Wtemplate-body has become more strict
+            env.append_flags("CXXFLAGS", "-Wno-template-body")

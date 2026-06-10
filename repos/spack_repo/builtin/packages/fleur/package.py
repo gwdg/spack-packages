@@ -85,6 +85,9 @@ class Fleur(Package):
             env.set("FC", spec["mpi"].mpifc, force=True)
             env.set("CXX", spec["mpi"].mpicxx, force=True)
 
+        if self.spec.satisfies("%gcc@14:"):
+            env.append_flags("CFLAGS", "-Wno-error=implicit-function-declaration")
+
     @run_before("install")
     def configure(self):
         spec = self.spec

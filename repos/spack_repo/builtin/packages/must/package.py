@@ -20,6 +20,8 @@ class Must(CMakePackage):
 
     maintainers("jgalarowicz", "dmont")
 
+    version("1.11.2", sha256="934d41dcf379df65c68853646344736a85d58ecc93e8fc4fe9c4077b2eca9ccb")
+    version("1.11.1", sha256="46a3e56691e818df92471865bf5affe1635f9cba3fb364ed8ce7a19c36c1caca")
     version("1.9.0", sha256="24998f4ca6bce718d69347de90798600f2385c21266c2d1dd39a87dd8bd1fba4")
     version("1.8.0", sha256="9754fefd2e4c8cba812f8b56a5dd929bc84aa599b2509305e1eb8518be0a8a39")
     version("1.7.2", sha256="616c54b7487923959df126ac4b47ae8c611717d679fe7ec29f57a89bf0e2e0d0")
@@ -49,6 +51,7 @@ class Must(CMakePackage):
     depends_on("libxml2")
     depends_on("dyninst", when="+stackwalker")
     depends_on("graphviz", when="+graphviz")
+    depends_on("libdwarf", when="+backward")
 
     @run_after("install")
     def install_prebuilds(self):

@@ -72,6 +72,9 @@ class FoamExtend(Package):
     variant(
         "source", default=True, description="Install library/application sources and tutorials"
     )
+    variant("debug", default=False, description="build debug version")
+
+    variant("solids4foam", default=False, description="build with solids4foam patches")
 
     depends_on("c", type="build")  # generated
     depends_on("cxx", type="build")  # generated
@@ -110,6 +113,9 @@ class FoamExtend(Package):
 
     phases = ["configure", "build", "install"]
     build_script = "./spack-Allwmake"  # <- Added by patch() method.
+    patch("50-bashrc.patch", when="@5.0")
+    patch("41-gcc.patch", when="@4.1")
+    patch("41-solids4foam.patch", when="@4.1 +solids4foam")
 
     #
     # - End of definitions / setup -
@@ -131,7 +137,7 @@ class FoamExtend(Package):
                 mods = EnvironmentModifications.from_sourcing_file(
                     bashrc,
                     clean=True,  # Remove duplicate entries
-                    blacklist=[  # Blacklist these
+                    exclude=[  # Exclude these
                         # Inadvertent changes
                         # -------------------
                         "PS1",  # Leave unaffected
@@ -154,18 +160,21 @@ class FoamExtend(Package):
                         # -------------
                         "FOAM_RUN",
                         "(FOAM|WM)_.*USER_.*",
+                        "FOAM_JOB_DIR",
+                        "LD_LIBRARY_PATH",
+                        "PATH",
                     ],
-                    whitelist=[
-                        "MPI_ARCH_PATH",
+                    include=[  # Include these
+                        "MPI_ARCH_PATH",  # Can be needed for compilation
                         "PYTHON_BIN_DIR",
-                    ],  # Whitelist these  # Can be needed for compilation
+                    ],
                 )
-
                 env.extend(mods)
                 minimal = False
                 tty.info("foam-extend env: {0}".format(bashrc))
-            except Exception:
-                minimal = True
+            except Exception as e:
+                msg = "unexpected error when sourcing OpenFOAM bashrc [{0}]"
+                tty.warn(msg.format(str(e)))
 
         if minimal:
             # pre-build or minimal environment
@@ -347,6 +356,10 @@ class FoamExtend(Package):
                 "QT_DIR": spec["qt"].prefix,
                 "QT_BIN_DIR": spec["qt"].prefix.bin,
             }
+        if "+debug" in self.spec:
+            self.etc_prefs["001"] = {"WM_COMPILE_OPTION": "Debug"}
+        else:
+            self.etc_prefs["001"] = {"WM_COMPILE_OPTION": "Opt"}
 
         # Write prefs files according to the configuration.
         # Only need prefs.sh for building, but install both for end-users

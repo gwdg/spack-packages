@@ -39,3 +39,10 @@ class Btllib(MesonPackage):
 
     def meson_args(self):
         return ["-Db_ndebug=true", "-Db_coverage=false"]
+
+    def setup_build_environment(self, env: EnvironmentModifications) -> None:
+        super().setup_build_environment(env)
+
+        if self.spec.satisfies("@:1.7.5 %gcc@15:"):
+            # gcc@15: -Wtemplate-body has become more strict
+            env.append_flags("CXXFLAGS", "-Wno-template-body")

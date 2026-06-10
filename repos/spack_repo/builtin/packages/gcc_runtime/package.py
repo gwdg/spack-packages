@@ -68,7 +68,7 @@ class GccRuntime(Package):
             return
 
         for path, name in libraries:
-            install(path, os.path.join(prefix.lib, name))
+            install(path, os.path.join(prefix.lib, os.path.basename(name)))
 
         if spec.platform in ("linux", "freebsd"):
             _drop_libgfortran_zlib(prefix.lib)
@@ -143,7 +143,8 @@ class GccRuntime(Package):
 
 def _drop_libgfortran_zlib(lib_dir: str) -> None:
     """Due to a bug in GCC's autotools setup (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=87182),
-    libz sometimes appears as a redundant system dependency of libgfortran. Delete it."""
+    libz sometimes appears as a redundant system dependency of libgfortran. Delete it.
+    """
     libraries = glob.glob(os.path.join(lib_dir, "libgfortran*.so*"))
     if len(libraries) == 0:
         return

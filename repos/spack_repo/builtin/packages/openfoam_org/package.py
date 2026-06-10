@@ -195,7 +195,36 @@ class OpenfoamOrg(Package):
     def setup_run_environment(self, env: EnvironmentModifications) -> None:
         bashrc = self.prefix.etc.bashrc
         try:
-            env.extend(EnvironmentModifications.from_sourcing_file(bashrc, clean=True))
+            mods = EnvironmentModifications.from_sourcing_file(
+                bashrc,
+                clean=True,  # Remove duplicate entries
+                exclude=[
+                    # Inadvertent changes
+                    # -------------------
+                    "PS1",  # Leave untouched
+                    "MANPATH",  # Leave untouched
+                    # Unneeded bits
+                    # -------------
+                    # 'FOAM_SETTINGS',  # Do not use with modules
+                    # 'FOAM_INST_DIR',  # Old
+                    # 'FOAM_(APP|ETC|SRC|SOLVERS|UTILITIES)',
+                    # 'FOAM_TUTORIALS', # May be useful
+                    # 'WM_OSTYPE',      # Purely optional value
+                    # Third-party cruft - only used for orig compilation
+                    # -----------------
+                    "[A-Z].*_ARCH_PATH",
+                    # '(KAHIP|METIS|SCOTCH)_VERSION',
+                    # User-specific
+                    # -------------
+                    "FOAM_RUN",
+                    "(FOAM|WM)_.*USER_.*",
+                    "LD_LIBRARY_PATH",
+                    "WM_PROJECT_USER_DIR",
+                    "PATH",
+                ],
+                include=["MPI_ARCH_PATH"],  # Can be required for compilation
+            )
+            env.extend(mods)
         except Exception as e:
             msg = "unexpected error when sourcing OpenFOAM bashrc [{0}]"
             tty.warn(msg.format(str(e)))

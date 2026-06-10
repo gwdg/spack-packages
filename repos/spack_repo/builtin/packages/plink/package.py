@@ -29,6 +29,8 @@ class Plink(Package):
         depends_on("blas", when="@1.9-beta6.27:")
         depends_on("lapack", when="@1.9-beta6.27:")
     depends_on("gmake", type="build")
+    depends_on("c", type="build")
+    depends_on("cxx", type="build")
 
     patch("dynamic_zlib.patch", when="@1.9-beta6.27:1.9-beta6.99")
     patch("dynamic_zlib-1.3.patch", when="@1.9-beta7.7:")
@@ -43,8 +45,15 @@ class Plink(Package):
 
     @when("@1.9-beta6.27:")
     def setup_build_environment(self, env: EnvironmentModifications) -> None:
-        env.set("BLASFLAGS", self.spec["blas"].libs.ld_flags)
+        env.set(
+            "BLASFLAGS", self.spec["blas"].libs.ld_flags + " " + self.spec["lapack"].libs.ld_flags
+        )
         env.set("ZLIB", self.spec["zlib-api"].libs.ld_flags)
+        if self.spec["blas"].package.name == "amdblis":
+            env.set(
+                "CFLAGS",
+                "-Wall -O2 -g -I../2.0/simde " + self.spec["blas"].headers.include_flags + "/blis",
+            )
 
     @when("@1.9-beta6.27:")
     def install(self, spec, prefix):

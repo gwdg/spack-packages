@@ -75,4 +75,6 @@ class IqTree(CMakePackage):
 
         args.append("-DIQTREE_FLAGS=" + ",".join(iqflags))
 
+        args.append("-DEIGEN3_INCLUDE_DIR=" + spec["eigen"].prefix.include)
+
         return args

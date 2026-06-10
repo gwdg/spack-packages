@@ -15,7 +15,7 @@ class PyReportseff(PythonPackage):
 
     license("MIT")
 
-    version("2.8.2", sha256="e3cd58290c261ea1e51396a11ec2fc2fc5332294d1cd52d054532e3c1c9b7950")
+    version("2.7.6", sha256="1d62e406059c5ff0f8bb5eb4949de8cc322299418b5bfe75e0a27bd0f8c12197")
     version("2.7.2", sha256="63cf99ceb0111de511636b214ade937c6c1b8444531e8026dbc34ddf92049c41")
 
     depends_on("python@3.7:3", type=("build", "run"))

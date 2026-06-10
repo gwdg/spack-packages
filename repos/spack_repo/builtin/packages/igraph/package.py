@@ -51,7 +51,6 @@ class Igraph(CMakePackage, AutotoolsPackage):
             "-DIGRAPH_USE_INTERNAL_GMP=OFF",
             "-DIGRAPH_USE_INTERNAL_LAPACK=OFF",
             "-DIGRAPH_USE_INTERNAL_PLFIT=ON",
-            "-DBLA_VENDOR=OpenBLAS",
         ]
 
         if self.spec.satisfies("+shared"):

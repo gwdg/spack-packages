@@ -1,0 +1,40 @@
+--- a/buildflags.mak	2025-03-18 08:10:43.527480946 +0100
++++ b/buildflags.mak	2025-03-18 08:10:50.273181020 +0100
+@@ -62,7 +62,7 @@
+ export os ?= $(shell uname -s | tr '[A-Z]' '[a-z]')
+ export arch := $(shell uname -m | sed -e 's,\(i[456]86\|athlon$$\),i386,')
+ 
+-ifeq (${CCARCH},$(filter ${CCARCH},gcc gcc4 icc clang))
++ifeq (${CCARCH},$(filter ${CCARCH},gcc gcc4 icc clang icx))
+ 	export CC := ${CCARCH}
+ else
+ 	anerr := $(error Unknown C compiler arch: ${CCARCH})
+@@ -201,7 +201,7 @@
+ 	LDFLAGS += -static-intel
+ else
+ 	LDFLAGS += -Wl,--build-id
+-	ifeq (${CCARCH},$(filter ${CCARCH},gcc clang))
++	ifeq (${CCARCH},$(filter ${CCARCH},gcc clang icx))
+ 		BASECFLAGS += -funwind-tables -Wno-strict-aliasing -Wformat-security
+ 	else
+ 		ifneq (${CCARCH},gcc4)
+--- a/compat/buildflags.mak	2025-03-18 09:19:23.963063926 +0100
++++ b/compat/buildflags.mak	2025-03-18 09:19:49.630970161 +0100
+@@ -57,7 +57,7 @@
+ export arch := $(shell uname -m | sed -e 's,\(i[456]86\|athlon$$\),i386,')
+ export CCARCH ?= gcc
+ 
+-ifeq (${CCARCH},$(filter ${CCARCH},gcc gcc4 icc clang))
++ifeq (${CCARCH},$(filter ${CCARCH},gcc gcc4 icc clang icx))
+ 	export CC := ${CCARCH}
+ else
+ 	anerr := $(error Unknown C compiler arch: ${CCARCH})
+@@ -82,7 +82,7 @@
+     BASECFLAGS += -O3 -g3
+     LDFLAGS += -static-intel
+ else
+-	ifeq (${CCARCH},$(filter ${CCARCH},gcc clang))
++	ifeq (${CCARCH},$(filter ${CCARCH},gcc clang icx))
+ 	    BASECFLAGS += -Wno-strict-aliasing
+ 	else
+ 		ifneq (${CCARCH},gcc4)

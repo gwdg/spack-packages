@@ -1,0 +1,13 @@
+--- a/pom.xml	2025-03-05 09:11:56.392096280 +0100
++++ b/pom.xml	2025-03-05 09:12:07.473962117 +0100
+@@ -176,8 +176,8 @@
+ 					<jdkToolchain>
+ 						<version>[1.6,8)</version>
+ 					</jdkToolchain>
+-					<source>1.6</source>
+-					<target>1.6</target>
++					<source>9</source>
++					<target>9</target>
+ 				</configuration>
+ 			</plugin>
+ 			<plugin>

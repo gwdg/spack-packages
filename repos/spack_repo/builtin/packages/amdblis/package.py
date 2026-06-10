@@ -36,6 +36,7 @@ class Amdblis(BlisBase):
 
     license("BSD-3-Clause")
 
+    version("5.2.2", sha256="79f85665b2cdb10cd69d2418cc2dccaf8833adf20cf39d28b7fad544c58d3d80")
     version("5.2", sha256="c553bd543eedc87920df9b82634ae4c02662145ed737f51fdf4c9bca5e588028")
     version("5.1", sha256="4ab210cea8753f4be9646a3ad8e6b42c7d19380084a66312497c97278b8c76a4")
     version("5.0", sha256="5abb34972b88b2839709d0af8785662bc651c7806ccfa41d386d93c900169bc2")
@@ -119,3 +120,18 @@ class Amdblis(BlisBase):
             shared=self.spec.satisfies("libs=shared"),
             recursive=True,
         )
+
+    def edit(self, spec, prefix):
+        target = "auto"
+        for _target in ["x86_64", "zen", "zen2"]:
+            if self.spec.satisfies(f"target={_target}"):
+                target = _target
+
+        # amdlibflame linking fails with missing symbols without dynamic dispatch
+        for _target in ["zen", "zen2", "zen3", "zen4", "zen5", "zen6", "zen7", "zen8", "zen9"]:
+            if self.spec.satisfies(f"target={_target}"):
+                target = "amdzen"
+
+        # To ensure the target should always be the last argument for base and derived class
+        config_args = self.configure_args() + [target]
+        configure("--prefix={0}".format(prefix), *config_args)

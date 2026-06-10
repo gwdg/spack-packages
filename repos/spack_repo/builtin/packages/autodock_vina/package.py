@@ -18,6 +18,7 @@ class AutodockVina(MakefilePackage):
 
     license("Apache-2.0")
 
+    version("1.2.7", sha256="038a2ade139eeb85b4bc7f5242fbc770f192427735e17bdc877b7420f39553d9")
     version("1.2.6", sha256="9a3b888feaab511e3188b012bde1d41be0d72b54aa9516465b383f31dc394743")
     version("1.2.3", sha256="22f85b2e770b6acc363429153b9551f56e0a0d88d25f747a40d2f55a263608e0")
     version("1.2.2", sha256="b9c28df478f90d64dbbb5f4a53972bddffffb017b7bb58581a1a0034fff1b400")
@@ -69,3 +70,10 @@ class AutodockVina(MakefilePackage):
             mkdirp(prefix.bin)
             install("vina", prefix.bin)
             install("vina_split", prefix.bin)
+
+    def setup_build_environment(self, env: EnvironmentModifications) -> None:
+        super().setup_build_environment(env)
+
+        if self.spec.satisfies("@:1.2.7 %gcc@15:"):
+            # gcc@15: -Wtemplate-body has become more strict
+            env.append_flags("CXXFLAGS", "-Wno-template-body")

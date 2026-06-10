@@ -21,6 +21,8 @@ class Muscle5(MakefilePackage):
 
     version("5.1.0", sha256="2bba8b06e3ccabf6465fa26f459763b2029d7e7b9596881063e3aaba60d9e87d")
 
+    depends_on("c")  # To work around a spack bug that seems to treat this like a core spec
+
     depends_on("cxx", type="build")  # generated
 
     depends_on("sed", type="build")

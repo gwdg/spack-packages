@@ -63,7 +63,7 @@ class Amdscalapack(ScalapackBase):
             filter_file("-cpp", "", "CMakeLists.txt")
         # remove the C-style comments in header file that cause issues with flang
         if self.spec.satisfies("@4.2: %clang@18:"):
-            which("sed", required=True)(
+            which("sed")(
                 "-i",
                 "1,23d",
                 join_path(self.stage.source_path, "FRAMEWORK", "SL_Context_fortran_include.h"),
@@ -77,7 +77,7 @@ class Amdscalapack(ScalapackBase):
             return vers.format("scalapack", version)
 
     def flag_handler(self, name, flags):
-        (flags, _, _) = super().flag_handler(name, flags)
+        flags, _, _ = super().flag_handler(name, flags)
         # remove a flag set in ScalapackBase that is not working
         if self.spec.satisfies("%gcc@14:"):
             if "-std=gnu89" in flags:
@@ -120,6 +120,10 @@ class Amdscalapack(ScalapackBase):
             c_flags.append("-Wno-deprecated-non-prototype")
             c_flags.append("-Wno-incompatible-pointer-types")
             args.append(self.define("CMAKE_C_FLAGS", " ".join(c_flags)))
+        elif self.spec.satisfies("@:5.2 %gcc@15:"):
+            # GCC 15 defaults to -std=gnu23 which leads to
+            # an error in /TOOLS/reshape.c
+            args.append(self.define("CMAKE_C_FLAGS", "-Wno-incompatible-pointer-types -std=gnu17"))
         elif self.spec.satisfies("%gcc@14:"):
             args.append(self.define("CMAKE_C_FLAGS", "-Wno-incompatible-pointer-types"))
 

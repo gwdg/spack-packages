@@ -39,3 +39,10 @@ class Glpk(AutotoolsPackage, GNUMirrorPackage):
             options.append("--with-gmp")
 
         return options
+
+    def setup_build_environment(self, env: EnvironmentModifications) -> None:
+        super().setup_build_environment(env)
+
+        if self.spec.satisfies("@:5.0 %gcc@15:"):
+            # gcc@15: is -std=gnu23 by default
+            env.append_flags("CFLAGS", "-std=gnu17")

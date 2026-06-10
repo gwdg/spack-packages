@@ -1,6 +1,7 @@
 # Copyright Spack Project Developers. See COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
+import glob
 import os
 import os.path
 import pathlib
@@ -544,10 +545,17 @@ class IntelOneapiCompilers(IntelOneApiPackage, CompilerPackage):
                 )
             )
 
+        compiler_lib_dir = join_path(self.prefix.compiler, self.spec.version.up_to(2), "lib")
+        env.prepend_path("LD_RUN_PATH", compiler_lib_dir)
+
         env.set("CC", self._llvm_bin.icx)
         env.set("CXX", self._llvm_bin.icpx)
         env.set("F77", self._llvm_bin.ifx)
         env.set("FC", self._llvm_bin.ifx)
+
+        # This will force pkg-config to emit the -I and -L flags for spack
+        # installed libraries
+        env.set("PKG_CONFIG_ALLOW_SYSTEM_CFLAGS", "1")
 
     def setup_dependent_build_environment(
         self, env: EnvironmentModifications, dependent_spec: Spec
@@ -625,7 +633,7 @@ class IntelOneapiCompilers(IntelOneApiPackage, CompilerPackage):
             return
 
         # 2024 fixed all but these 2
-        patchelf = which("patchelf", required=True)
+        patchelf = which("patchelf")
         if self.spec.satisfies("@2024:"):
             patchelf.add_default_arg("--set-rpath", self.component_prefix.lib)
             patchelf(self.component_prefix.bin.join("sycl-post-link"))
@@ -757,18 +765,6 @@ class IntelOneapiCompilers(IntelOneApiPackage, CompilerPackage):
         pkg("intel-oneapi-runtime").requires(
             f"@{spec.versions}", when=f"%[deptypes=build] {spec.name}@{spec.versions}"
         )
-
-        # If the compiler depends on gcc@X.Y, the runtime must depend on gcc-runtime@X.Y
-        if spec.satisfies("%gcc"):
-            try:
-                gcc = spec["gcc"]
-                pkg("intel-oneapi-runtime").requires(
-                    f"@{spec.versions} %gcc-runtime@{gcc.version}",
-                    when=f"%[deptypes=build] {spec.name}/{spec.dag_hash()}",
-                )
-            except (RuntimeError, KeyError):
-                # Externals may not have gcc as a dependency, but still satisfy %gcc
-                pass
 
         # If a node used %intel-oneapi-runtime@X.Y its dependencies must use @:X.Y
         # (technically @:X is broader than ... <= @=X but this should work in practice)

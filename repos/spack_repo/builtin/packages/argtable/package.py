@@ -20,3 +20,7 @@ class Argtable(AutotoolsPackage):
     version("2-13", sha256="8f77e8a7ced5301af6e22f47302fdbc3b1ff41f2b83c43c77ae5ca041771ddbf")
 
     depends_on("c", type="build")  # generated
+
+    def setup_build_environment(self, env):
+        if self.spec.satisfies("%gcc@14:") or self.spec.satisfies("%oneapi"):
+            env.append_flags("CFLAGS", "-Wno-error=implicit-function-declaration")

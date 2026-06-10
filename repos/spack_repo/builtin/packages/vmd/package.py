@@ -30,7 +30,7 @@ class Vmd(Package):
             os.getcwd()
         ),
     )
-    manual_download = True
+    # manual_download = True
 
     depends_on("libx11", type=("run", "link"))
     depends_on("libxi", type=("run", "link"))
@@ -54,7 +54,7 @@ class Vmd(Package):
         # make sure the executable finds and uses the Spack-provided
         # libraries, otherwise the executable may or may not run depending
         # on what is installed on the host
-        patchelf = which("patchelf", required=True)
+        patchelf = which("patchelf")
         rpath = ":".join(
             self.spec[dep].libs.directories[0] for dep in ["libx11", "libxi", "libxinerama", "gl"]
         )

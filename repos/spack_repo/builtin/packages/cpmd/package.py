@@ -27,6 +27,9 @@ class Cpmd(MakefilePackage):
     depends_on("c", type="build")  # generated
     depends_on("fortran", type="build")  # generated
 
+    depends_on("subversion", type="build")
+
+    depends_on("blas")
     depends_on("lapack")
     depends_on("mpi", when="+mpi")
 
@@ -73,19 +76,24 @@ class Cpmd(MakefilePackage):
         if spec.satisfies("%gcc@10:"):
             cp.filter(r"FFLAGS='([^']*)'", "FFLAGS='\\1 -fallow-argument-mismatch'")
 
-        if spec.satisfies("%gcc@14:"):
+        if spec.satisfies("%gcc@14:") or spec.satisfies("%oneapi") or spec.satisfies("%aocc"):
             cp.filter(r"CFLAGS='([^']*)'", "CFLAGS='\\1 -Wno-error=int-conversion'")
 
         # create Makefile
         os.chmod("./scripts/configure.sh", 0o755)
-        bash = which("bash", required=True)
+        bash = which("bash")
         if spec.satisfies("+omp"):
             bash("./configure.sh", "-omp", cbase)
         else:
             bash("./configure.sh", cbase)
 
     def install(self, spec, prefix):
-        install_tree(".", prefix)
+        install_tree("bin", prefix.bin)
+        install_tree("lib", prefix.lib)
+        os.mkdir(prefix.doc)
+        install("Makefile", prefix.doc)
+        install("LICENSE", prefix.doc)
+        install("README.md", prefix.doc)
 
     def test_cpmd(self):
         """check cpmd.x outputs"""
@@ -100,7 +108,7 @@ class Cpmd(MakefilePackage):
             exe_name = "cpmd.x"
         opts.append(test_file)
         opts.append(test_dir)
-        cpmd = which(exe_name, required=True)
+        cpmd = which(exe_name)
         out = cpmd(*opts, output=str.split, error=str.split)
 
         expected = [

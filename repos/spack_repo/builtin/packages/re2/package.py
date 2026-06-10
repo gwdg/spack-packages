@@ -17,6 +17,9 @@ class Re2(CMakePackage):
     license("BSD-3-Clause", checked_by="wdconinc")
 
     version(
+        "2025-11-05", sha256="87f6029d2f6de8aa023654240a03ada90e876ce9a4676e258dd01ea4c26ffd67"
+    )
+    version(
         "2024-07-02", sha256="eb2df807c781601c14a260a507a5bb4509be1ee626024cb45acbd57cb9d4032b"
     )
     version(

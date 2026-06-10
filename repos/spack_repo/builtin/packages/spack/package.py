@@ -1,10 +1,12 @@
-# Copyright Spack Project Developers. See COPYRIGHT file for details.
+# Copyright 2013-2024 Lawrence Livermore National Security, LLC and other
+# Spack Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-from spack_repo.builtin.build_systems.generic import Package
+from pathlib import Path
 
 from spack.package import *
+from spack.variant import DisjointSetsOfValues
 
 
 class Spack(Package):
@@ -21,11 +23,12 @@ class Spack(Package):
     url = "https://github.com/spack/spack/releases/download/v0.16.2/spack-0.16.2.tar.gz"
     maintainers("haampie")
 
-    tags = ["e4s"]
-
     license("Apache-2.0 OR MIT")
 
     version("develop", branch="develop")
+    version("1.1.1", sha256="a0160ae5e84adc81ac7832562a65ad79053d5c135996815dbb0d2eee6b2fca1c")
+    version("0.23.1", sha256="32ca622c49448a3b4e398eb1397d8ff9a6aa987a248de621261e24e65f287593")
+    version("0.23.0", sha256="ddb8220c46743e45c9484622370a1e17e193acba6a43230868c2dbc717e88b56")
     version("0.21.1", sha256="9a66bc8b59d436d5c0bd7b052c36d2177b228665ece6c9a2c339c2acb3f9103e")
     version("0.21.0", sha256="98680e52591428dc194a021e673a79bdc7799f394c1217b3fc22c89465159a84")
     version("0.20.1", sha256="141be037b56e4b095840a95ac51c428c29dad078f7f88140ae6355b2a1b32dc3")
@@ -44,18 +47,24 @@ class Spack(Package):
     version("0.16.1", sha256="8d893036b24d9ee0feee41ac33dd66e4fc68d392918f346f8a7a36a69c567567")
     version("0.16.0", sha256="064b2532c70916c7684d4c7c973416ac32dd2ea15f5c392654c75258bfc8c6c2")
 
+    depends_on("c", type="build")  # generated
+    depends_on("cxx", type="build")  # generated
+    depends_on("fortran", type="build")  # generated
+
     variant("development_tools", default=False, description="Build development dependencies")
     variant(
         "fetchers",
-        values=any_combination_of("curl", "git", "mercurial", "subversion", "s3").with_default(
-            "git"
-        ),
+        # TODO: make Spack support default=... with any_combination_of :(
+        values=DisjointSetsOfValues(
+            ("none",), ("curl", "git", "mercurial", "subversion", "s3")
+        ).with_default("git"),
         description="Fetchers for sources and binaries. "
         "By default, urllib is used since Spack 0.17",
     )
     variant(
         "modules",
-        values=any_combination_of("environment-modules", "lmod").with_default(
+        # TODO: make Spack support default=... with any_combination_of :(
+        values=DisjointSetsOfValues(("none",), ("environment-modules", "lmod")).with_default(
             "environment-modules,lmod"
         ),
         description="This variant makes Spack install the specified module system; "
@@ -140,8 +149,32 @@ class Spack(Package):
         depends_on("py-sphinx-rtd-theme", type="run")
         depends_on("graphviz", type="run")
 
-    def setup_run_environment(self, env: EnvironmentModifications) -> None:
+    def setup_run_environment(self, env):
         env.set("SPACK_PYTHON", self.spec["python"].command.path)
 
     def install(self, spec, prefix):
         install_tree(self.stage.source_path, self.prefix)
+
+        # Config files in `config` directory and copy to installation directory
+
+        token = str(self.prefix).split("/")
+        # The prefix should contain .../rev/XX.YY/machinekind/...
+        idx = token.index("rev")
+        revision = token[idx + 1]
+        machinekind = token[idx + 2]
+
+        custom_config_files = [f for f in Path(__file__).parent.glob("config/*.yaml")]
+        for config_file in custom_config_files:
+            path = f"{prefix.etc.spack}/{config_file.name}"
+            copy(str(config_file.absolute()), path)
+            filter_file(r"##MACHINEKIND##", machinekind, path)
+            filter_file(r"##REVISION##", revision, path)
+            filter_file(r"##REVISION_JOINED##", revision.replace(".", ""), path)
+
+        custom_config_files = [f for f in Path(__file__).parent.glob("config/site/*.yaml")]
+        for config_file in custom_config_files:
+            path = f"{prefix.etc.spack}/site/{config_file.name}"
+            copy(str(config_file.absolute()), path)
+            filter_file(r"##MACHINEKIND##", machinekind, path)
+            filter_file(r"##REVISION##", revision, path)
+            filter_file(r"##REVISION_JOINED##", revision.replace(".", ""), path)

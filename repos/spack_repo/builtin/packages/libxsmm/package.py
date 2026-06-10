@@ -140,6 +140,10 @@ class Libxsmm(MakefilePackage):
         if spec.satisfies("+large_jit_buffer"):
             make_args += ["CODE_BUF_MAXSIZE=262144"]
 
+        if self.spec.satisfies("@:1.17 %gcc@15:"):
+            # gcc@15: is -std=gnu23 by default
+            make_args += ["CFLAGS=-std=gnu17"]
+
         if spec.satisfies("+shared"):
             make(*(make_args + ["STATIC=0"]))
 

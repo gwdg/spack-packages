@@ -542,6 +542,9 @@ class Openfoam(Package):
                         # -------------
                         "FOAM_RUN",
                         "(FOAM|WM)_.*USER_.*",
+                        "LD_LIBRARY_PATH",
+                        "WM_PROJECT_USER_DIR",
+                        "PATH",
                     ],
                     whitelist=[
                         "MPI_ARCH_PATH"

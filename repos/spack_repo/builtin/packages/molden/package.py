@@ -62,10 +62,16 @@ class Molden(MakefilePackage):
 
     def flag_handler(self, name, flags):
         if name == "fflags":
-            if self.spec.satisfies("%gcc@10:"):
+            if self.spec.satisfies("%gcc@10:") or self.spec.satisfies("%oneapi"):
                 if flags is None:
                     flags = []
                 flags.append("-fallow-argument-mismatch")
+        if name == "cflags":
+            if self.spec.satisfies("%gcc@14:") or self.spec.satisfies("%oneapi"):
+                if flags is None:
+                    flags = []
+                flags.append("-Wno-error=implicit-function-declaration")
+                flags.append("-Wno-error=incompatible-pointer-types")
         return (flags, None, None)
 
     def install(self, spec, prefix):

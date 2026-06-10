@@ -1,0 +1,354 @@
+diff --git a/src/finiteVolume/finiteVolume/ddtSchemes/EulerDdtScheme/EulerDdtScheme.C b/src/finiteVolume/finiteVolume/ddtSchemes/EulerDdtScheme/EulerDdtScheme.C
+index 8dc55b507..cdacefddf 100644
+--- a/src/finiteVolume/finiteVolume/ddtSchemes/EulerDdtScheme/EulerDdtScheme.C
++++ b/src/finiteVolume/finiteVolume/ddtSchemes/EulerDdtScheme/EulerDdtScheme.C
+@@ -1,25 +1,19 @@
+ /*---------------------------------------------------------------------------*\
+-  =========                 |
+-  \\      /  F ield         | foam-extend: Open Source CFD
+-   \\    /   O peration     | Version:     4.1
+-    \\  /    A nd           | Web:         http://www.foam-extend.org
+-     \\/     M anipulation  | For copyright notice see file Copyright
+--------------------------------------------------------------------------------
+ License
+-    This file is part of foam-extend.
++    This file is part of solids4foam.
+ 
+-    foam-extend is free software: you can redistribute it and/or modify it
++    solids4foam is free software: you can redistribute it and/or modify it
+     under the terms of the GNU General Public License as published by the
+     Free Software Foundation, either version 3 of the License, or (at your
+     option) any later version.
+ 
+-    foam-extend is distributed in the hope that it will be useful, but
++    solids4foam is distributed in the hope that it will be useful, but
+     WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+     General Public License for more details.
+ 
+     You should have received a copy of the GNU General Public License
+-    along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
++    along with solids4foam.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ \*---------------------------------------------------------------------------*/
+ 
+@@ -517,40 +511,100 @@ template<class Type>
+ tmp<typename EulerDdtScheme<Type>::fluxFieldType>
+ EulerDdtScheme<Type>::fvcDdtConsistentPhiCorr
+ (
+-    const GeometricField<Type, fvsPatchField, surfaceMesh>& faceU,
++    const GeometricField<Type, fvsPatchField, surfaceMesh>& Uf,
+     const GeometricField<Type, fvPatchField, volMesh>& U,
+     const surfaceScalarField& rAUf
+ )
+ {
+-    tmp<fluxFieldType> toldTimeFlux =
+-        (mesh().Sf() & faceU.oldTime())*rAUf/mesh().time().deltaT();
++    dimensionedScalar rDeltaT = 1.0/mesh().time().deltaT();
++
++    volScalarField V0oV
++    (
++        IOobject
++        (
++            "V0oV",
++            mesh().time().timeName(),
++            mesh(),
++            IOobject::NO_READ,
++            IOobject::NO_WRITE
++        ),
++        mesh(),
++        dimensionedScalar("1", dimless, 1),
++        zeroGradientFvPatchScalarField::typeName
++    );
+ 
+     if (mesh().moving())
+     {
+-        // Mesh is moving, need to take into account the ratio between old and
+-        // current cell volumes
+-        volScalarField V0ByV
++        V0oV.internalField() = mesh().V0()/mesh().V();
++        V0oV.correctBoundaryConditions();
++    }
++
++    fluxFieldType phiUf0
++    (
++        (mesh().Sf() & Uf.oldTime())*
++        fvc::interpolate(V0oV)
++    );
++
++    fluxFieldType phiCorr
++    (
++        phiUf0 - (mesh().Sf() & fvc::interpolate(U.oldTime()*V0oV))
++    );
++
++    forAll(phiCorr.boundaryField(), patchI)
++    {
++        if
++        (
++            U.boundaryField()[patchI].fixesValue()
++        )
++        {
++            phiCorr.boundaryField()[patchI] *= 0.0;
++        }
++    }
++
++    return tmp<fluxFieldType>
++    (
++        new fluxFieldType
+         (
+             IOobject
+             (
+-                "V0ByV",
++                "ddtCorr(" + U.name() + ',' + Uf.name() + ')',
+                 mesh().time().timeName(),
+-                mesh(),
+-                IOobject::NO_READ,
+-                IOobject::NO_WRITE
++                mesh()
+             ),
+-            mesh(),
+-            dimensionedScalar("one", dimless, 1.0),
+-            zeroGradientFvPatchScalarField::typeName
+-        );
+-        V0ByV.internalField() = mesh().V0()/mesh().V();
+-        V0ByV.correctBoundaryConditions();
++            rDeltaT*phiCorr*rAUf
++        )
++    );
+ 
+-        // Correct the flux with interpolated volume ratio
+-        toldTimeFlux() *= fvc::interpolate(V0ByV);
+-    }
+ 
+-    return toldTimeFlux;
++    // tmp<fluxFieldType> toldTimeFlux =
++    //     (mesh().Sf() & faceU.oldTime())*rAUf/mesh().time().deltaT();
++
++    // if (mesh().moving())
++    // {
++    //     // Mesh is moving, need to take into account the ratio between old and
++    //     // current cell volumes
++    //     volScalarField V0ByV
++    //     (
++    //         IOobject
++    //         (
++    //             "V0ByV",
++    //             mesh().time().timeName(),
++    //             mesh(),
++    //             IOobject::NO_READ,
++    //             IOobject::NO_WRITE
++    //         ),
++    //         mesh(),
++    //         dimensionedScalar("one", dimless, 1.0),
++    //         zeroGradientFvPatchScalarField::typeName
++    //     );
++    //     V0ByV.internalField() = mesh().V0()/mesh().V();
++    //     V0ByV.correctBoundaryConditions();
++
++    //     // Correct the flux with interpolated volume ratio
++    //     toldTimeFlux() *= fvc::interpolate(V0ByV);
++    // }
++
++    // return toldTimeFlux;
+ }
+ 
+ 
+diff --git a/src/foam/fields/GeometricFields/GeometricField/GeometricField.C b/src/foam/fields/GeometricFields/GeometricField/GeometricField.C
+index 70bd583c7..b494e2dc6 100644
+--- a/src/foam/fields/GeometricFields/GeometricField/GeometricField.C
++++ b/src/foam/fields/GeometricFields/GeometricField/GeometricField.C
+@@ -1,25 +1,19 @@
+ /*---------------------------------------------------------------------------*\
+-  =========                 |
+-  \\      /  F ield         | foam-extend: Open Source CFD
+-   \\    /   O peration     | Version:     4.1
+-    \\  /    A nd           | Web:         http://www.foam-extend.org
+-     \\/     M anipulation  | For copyright notice see file Copyright
+--------------------------------------------------------------------------------
+ License
+-    This file is part of foam-extend.
++    This file is part of solids4foam.
+ 
+-    foam-extend is free software: you can redistribute it and/or modify it
++    solids4foam is free software: you can redistribute it and/or modify it
+     under the terms of the GNU General Public License as published by the
+     Free Software Foundation, either version 3 of the License, or (at your
+     option) any later version.
+ 
+-    foam-extend is distributed in the hope that it will be useful, but
++    solids4foam is distributed in the hope that it will be useful, but
+     WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+     General Public License for more details.
+ 
+     You should have received a copy of the GNU General Public License
+-    along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
++    along with solids4foam.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ \*---------------------------------------------------------------------------*/
+ 
+@@ -753,10 +747,13 @@ void Foam::GeometricField<Type, PatchField, GeoMesh>::storeOldTimes() const
+     )
+     {
+         storeOldTime();
++
++        // Correct time index.
++        timeIndex_ = this->time().timeIndex();
+     }
+ 
+-    // Correct time index.  Bug fix, Zeljko Tukovic 14/Jun/2010
+-    timeIndex_ = this->time().timeIndex();
++    // // Correct time index.  Bug fix, Zeljko Tukovic 14/Jun/2010
++    // timeIndex_ = this->time().timeIndex();
+ }
+ 
+ // Store old-time field
+diff --git a/src/foam/meshes/MeshObject/meshObjectBase.H b/src/foam/meshes/MeshObject/meshObjectBase.H
+index 2f6730889..062b22dba 100644
+--- a/src/foam/meshes/MeshObject/meshObjectBase.H
++++ b/src/foam/meshes/MeshObject/meshObjectBase.H
+@@ -1,25 +1,19 @@
+ /*---------------------------------------------------------------------------*\
+-  =========                 |
+-  \\      /  F ield         | foam-extend: Open Source CFD
+-   \\    /   O peration     | Version:     4.1
+-    \\  /    A nd           | Web:         http://www.foam-extend.org
+-     \\/     M anipulation  | For copyright notice see file Copyright
+--------------------------------------------------------------------------------
+ License
+-    This file is part of foam-extend.
++    This file is part of solids4foam.
+ 
+-    foam-extend is free software: you can redistribute it and/or modify it
++    solids4foam is free software: you can redistribute it and/or modify it
+     under the terms of the GNU General Public License as published by the
+     Free Software Foundation, either version 3 of the License, or (at your
+     option) any later version.
+ 
+-    foam-extend is distributed in the hope that it will be useful, but
++    solids4foam is distributed in the hope that it will be useful, but
+     WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+     General Public License for more details.
+ 
+     You should have received a copy of the GNU General Public License
+-    along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
++    along with solids4foam.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ Class
+     meshObjectBase
+@@ -28,6 +22,8 @@ Description
+     Abstract base-class for dynamic mesh objects used to automate
+     their allocation to the mesh database and mesh-related updates
+ 
++    This is a modified version of meshObjectBase.C from foam-extend-4.1.
++
+ SourceFiles
+     meshObjectBase.C
+ 
+@@ -170,7 +166,10 @@ public:
+                     Info << "Deleting object " << obj.type() << endl;
+                 }
+ 
+-                obj.deleteObject();
++                // In foam-extend-4.0, this was within the if scope above but
++                // when placed here it causes mesh objects to be freed twice,
++                // giving a segmentation fault at the end of a run
++                // obj.deleteObject();
+             }
+         }
+ 
+diff --git a/src/foam/meshes/pointMesh/pointBoundaryMesh/pointBoundaryMesh.C b/src/foam/meshes/pointMesh/pointBoundaryMesh/pointBoundaryMesh.C
+index 50a994d7f..e75a90113 100644
+--- a/src/foam/meshes/pointMesh/pointBoundaryMesh/pointBoundaryMesh.C
++++ b/src/foam/meshes/pointMesh/pointBoundaryMesh/pointBoundaryMesh.C
+@@ -1,25 +1,19 @@
+ /*---------------------------------------------------------------------------*\
+-  =========                 |
+-  \\      /  F ield         | foam-extend: Open Source CFD
+-   \\    /   O peration     | Version:     4.1
+-    \\  /    A nd           | Web:         http://www.foam-extend.org
+-     \\/     M anipulation  | For copyright notice see file Copyright
+--------------------------------------------------------------------------------
+ License
+-    This file is part of foam-extend.
++    This file is part of solids4foam.
+ 
+-    foam-extend is free software: you can redistribute it and/or modify it
++    solids4foam is free software: you can redistribute it and/or modify it
+     under the terms of the GNU General Public License as published by the
+     Free Software Foundation, either version 3 of the License, or (at your
+     option) any later version.
+ 
+-    foam-extend is distributed in the hope that it will be useful, but
++    solids4foam is distributed in the hope that it will be useful, but
+     WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+     General Public License for more details.
+ 
+     You should have received a copy of the GNU General Public License
+-    along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
++    along with solids4foam.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ \*---------------------------------------------------------------------------*/
+ 
+@@ -111,33 +105,35 @@ void Foam::pointBoundaryMesh::updateMesh
+     const polyMesh& pMesh
+ )
+ {
+-    const polyBoundaryMesh& pBoundary = pMesh.boundaryMesh();
++    // const polyBoundaryMesh& pBoundary = pMesh.boundaryMesh();
+     pointPatchList& patches = *this;
+ 
++    // PC: clearing the boundary will invalidate the boundary of all point
++    // fields
+     // 21.1.19 HR : Patches need to be recreated in PLB
+-    patches.clear();
+-    patches.setSize(pBoundary.size());
+-
+-    forAll(patches, patchI)
+-    {
+-        patches.set
+-        (
+-            patchI,
+-            facePointPatch::New(pBoundary[patchI], *this).ptr()
+-        );
+-    }
+-
+-    // Add the globalPointPatch
+-    if(pMesh.globalData().nGlobalPoints())
+-    {
+-        patches.setSize(pBoundary.size() + 1);
+-
+-        patches.set
+-        (
+-            patches.size() - 1,
+-            new globalPointPatch(*this, patches.size() - 1)
+-        );
+-    }
++    // patches.clear();
++    // patches.setSize(pBoundary.size());
++
++    // forAll(patches, patchI)
++    // {
++    //     patches.set
++    //     (
++    //         patchI,
++    //         facePointPatch::New(pBoundary[patchI], *this).ptr()
++    //     );
++    // }
++
++    // // Add the globalPointPatch
++    // if(pMesh.globalData().nGlobalPoints())
++    // {
++    //     patches.setSize(pBoundary.size() + 1);
++
++    //     patches.set
++    //     (
++    //         patches.size() - 1,
++    //         new globalPointPatch(*this, patches.size() - 1)
++    //     );
++    // }
+ 
+     forAll(patches, patchi)
+     {

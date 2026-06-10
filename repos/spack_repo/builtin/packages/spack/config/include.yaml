@@ -1,0 +1,19 @@
+include:
+  - name: "user"
+    path_override_env_var: SPACK_USER_CONFIG_PATH
+    path: "~/.spack"
+    optional: true
+    prefer_modify: true
+    when: '"SPACK_DISABLE_LOCAL_CONFIG" not in env'
+  - name: "platform-os-targetfamily"
+    path: "${platform}-${operating_system}-${target_family}"
+    optional: true
+  - name: "platform-targetfamily"
+    path: "${platform}-${target_family}"
+    optional: true
+  - name: "platform-os"
+    path: "${platform}-${operating_system}"
+    optional: true
+  - name: "site"
+    path: "site"
+    optional: true

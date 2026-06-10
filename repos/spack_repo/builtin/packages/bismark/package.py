@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-from spack_repo.builtin.build_systems.generic import Package
-
 from spack.package import *
 
 
@@ -12,10 +10,17 @@ class Bismark(Package):
     methylation states"""
 
     homepage = "https://www.bioinformatics.babraham.ac.uk/projects/bismark"
-    url = "https://github.com/FelixKrueger/Bismark/archive/0.23.0.tar.gz"
+
+    def url_for_version(self, version):
+        if version >= Version("0.24.2"):
+            url = "https://github.com/FelixKrueger/Bismark/archive/v{}.tar.gz"
+        else:
+            url = "https://github.com/FelixKrueger/Bismark/archive/{}.tar.gz"
+        return url.format(version)
 
     license("GPL-3.0-only")
 
+    version("0.25.1", sha256="b7e69f8e4893059f73863a8d2835245e70132715fdf49163b453bb7c0a8de61d")
     version("0.24.1", sha256="c5409f5fa470ea5ac07327ced28c60b793f5ef88c5a7bc75b71dde0f52f39894")
     version("0.23.0", sha256="ea1625808487c1442dbf825d9cbe5c0cbc37ea5bd1460f59e1e0ccc80cc01c9e")
     version("0.19.0", sha256="91707737f96a0574956a282b635abad7560e7d90bee188a67a7807b2470deae2")
@@ -24,6 +29,7 @@ class Bismark(Package):
     depends_on("bowtie2", type="run")
     depends_on("perl", type="run")
     depends_on("samtools", type="run")
+    depends_on("minimap2", type="run", when="@0.24:")
     depends_on("hisat2", type="run", when="@0.21.0:")
 
     def install(self, spec, prefix):

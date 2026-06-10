@@ -1,0 +1,7 @@
+upstreams:
+  rev_##REVISION_JOINED##_##MACHINEKIND##:
+    install_tree: /sw/rev/##REVISION##/##MACHINEKIND##
+
+# Additional upstreams from previous revisions
+#  rev_2405_##MACHINEKIND##:
+#    install_tree: /sw/rev/24.05/##MACHINEKIND##

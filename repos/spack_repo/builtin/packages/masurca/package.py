@@ -30,8 +30,6 @@ class Masurca(Package):
     depends_on("c", type="build")  # generated
     depends_on("cxx", type="build")  # generated
 
-    depends_on("gmake", type="build")
-
     depends_on("perl", type=("build", "run"))
     depends_on(Boost.with_default_variants)
     depends_on("zlib-api")
@@ -49,6 +47,9 @@ class Masurca(Package):
     def setup_build_environment(self, env: EnvironmentModifications) -> None:
         if self.spec.satisfies("@4:"):
             env.set("DEST", self.prefix)
+        if self.spec.satisfies("@:4.1.4 %gcc@15:"):
+            # gcc@15: -Wtemplate-body has become more strict
+            env.append_flags("CXXFLAGS", "-Wno-template-body")
 
     def install(self, spec, prefix):
         installer = Executable("./install.sh")

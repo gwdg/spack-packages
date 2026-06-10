@@ -155,7 +155,7 @@ class Amdfftw(FftwBase):
     requires("target=x86_64:", msg="AMD FFTW available only on x86_64")
 
     def flag_handler(self, name, flags):
-        (flags, _, _) = super().flag_handler(name, flags)
+        flags, _, _ = super().flag_handler(name, flags)
         if name == "cflags":
             if self.spec.satisfies("%gcc@14:"):
                 flags.append("-Wno-incompatible-pointer-types")

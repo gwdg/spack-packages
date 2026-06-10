@@ -26,6 +26,11 @@ class Trinity(MakefilePackage):
     license("BSD-3-Clause")
 
     version(
+        "2.15.2.FULL",
+        sha256="ba37e5f696d3d54e8aaaaaaaaaaaaaaaaaaaaaaa314a5229d7a069ad7b1ee580",
+        url="https://github.com/trinityrnaseq/trinityrnaseq/releases/download/Trinity-v2.15.2/trinityrnaseq-v2.15.2.FULL.tar.gz",
+    )
+    version(
         "2.15.1.FULL",
         sha256="ba37e5f696d3d54e8749c4ba439901a3e97e14a4314a5229d7a069ad7b1ee580",
         url="https://github.com/trinityrnaseq/trinityrnaseq/releases/download/Trinity-v2.15.1/trinityrnaseq-v2.15.1.FULL.tar.gz",
@@ -54,7 +59,7 @@ class Trinity(MakefilePackage):
     depends_on("java@8:", type=("build", "run"))
     depends_on("bowtie2")
     depends_on("jellyfish")
-    depends_on("salmon@:1.10.3")
+    depends_on("salmon")
     depends_on("perl+threads", type=("build", "run"))
     depends_on("autoconf", type="build")
     depends_on("automake", type="build")

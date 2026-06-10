@@ -70,8 +70,6 @@ class BlastPlus(AutotoolsPackage):
     variant("pcre", default=True, description="Build with pcre support")
     variant("perl", default=True, description="Build with perl support")
     variant("python", default=True, description="Build with python support")
-    variant("sqlite", default=False, description="Build with sqlite support")
-    variant("zstd", default=False, when="@2.10:", description="Build with zstd support")
 
     depends_on("jpeg", when="+jpeg")
     depends_on("libpng", when="+png")
@@ -89,17 +87,10 @@ class BlastPlus(AutotoolsPackage):
     depends_on("perl", when="+perl")
 
     depends_on("lmdb", when="@2.7.1:")
-    depends_on("sqlite", when="+sqlite")
-    depends_on("zstd", when="+zstd")
+    depends_on("sqlite", when="@2.15:")
+    depends_on("zstd", when="@2.17:")
 
     configure_directory = "c++"
-
-    requires("+sqlite", when="@2.15.0:", msg="sqlite support is required in 2.15 and later")
-    requires(
-        "+zstd+zlib+bzip2",
-        when="@2.17.0:",
-        msg="zstd, zlib, and bzip2 are required 2.17 and later",
-    )
 
     def configure_args(self):
         spec = self.spec
@@ -180,10 +171,17 @@ class BlastPlus(AutotoolsPackage):
         else:
             config_args.append("--without-python")
 
-        with when("+sqlite"):
+        if spec.satisfies("@2.15:"):
             config_args.append(f"--with-sqlite3={self.spec['sqlite'].prefix}")
 
-        with when("+zstd"):
+        if spec.satisfies("@2.17:"):
             config_args.append(f"--with-zstd={self.spec['zstd'].prefix}")
 
         return config_args
+
+    def setup_build_environment(self, env: EnvironmentModifications) -> None:
+        super().setup_build_environment(env)
+
+        if self.spec.satisfies("@:5.2.4 %gcc@15:"):
+            # gcc@15: -Wtemplate-body has become more strict
+            env.append_flags("CXXFLAGS", "-Wno-template-body")

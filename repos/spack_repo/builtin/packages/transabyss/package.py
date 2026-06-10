@@ -1,4 +1,5 @@
-# Copyright Spack Project Developers. See COPYRIGHT file for details.
+# Copyright 2013-2023 Lawrence Livermore National Security, LLC and other
+# Spack Project Developers. See the top-level COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
@@ -8,20 +9,26 @@ from spack.package import *
 
 
 class Transabyss(Package):
-    """De novo assembly of RNAseq data using ABySS"""
+    """de novo assembly of RNA-Seq data using ABySS"""
 
-    homepage = "https://www.bcgsc.ca/platform/bioinfo/software/trans-abyss"
-    url = "https://www.bcgsc.ca/platform/bioinfo/software/trans-abyss/releases/1.5.5/transabyss-1.5.5.zip"
+    git = "https://github.com/bcgsc/transabyss.git"
 
-    version("1.5.5", sha256="7804961c13296c587a1b22180dd3f02091a4494cbbd04fc33c2060599caadb0b")
+    version(
+        "2.0.1",
+        url="https://github.com/bcgsc/transabyss/releases/download/2.0.1/transabyss-2.0.1.zip",
+        sha256="542779af2d1232ca872a57b922cfd32e1c6e9e7e0b5fae56ef2e7682dfdf6040",
+        expand=False,
+    )
 
-    depends_on("abyss@1.5.2")
-    depends_on("python@2.7.6:", type=("build", "run"))
-    depends_on("py-python-igraph@0.7.0:", type=("build", "run"))
-    depends_on("blat")
+    # Build dependencies
+    depends_on("python", type=("build", "run"))
+    depends_on("abyss", type=("build", "run"))
+    depends_on("py-igraph", type=("build", "run"))
+    depends_on("blat", type=("build", "run"))
 
     def install(self, spec, prefix):
-        install("transabyss", prefix)
-        install("transabyss-merge", prefix)
-        install_tree("bin", prefix.bin)
-        install_tree("utilities", prefix.utilities)
+        bsdtar = which("bsdtar")
+        bsdtar("-xvzf", self.stage.archive_file, "-C", self.prefix, "--strip-components=1")
+
+    def setup_run_environment(self, env):
+        env.prepend_path("PATH", self.prefix)

@@ -137,7 +137,7 @@ class Ucx(AutotoolsPackage, CudaPackage):
     depends_on("c", type="build")  # generated
     depends_on("cxx", type="build")  # generated
 
-    depends_on("binutils+ld", when="%aocc", type="build")
+    depends_on("binutils", when="%aocc", type="build")
     depends_on("binutils", when="+backtrace_detail")
     depends_on("gdrcopy", when="@1.7:+gdrcopy")
     depends_on("gdrcopy@1.3", when="@:1.6+gdrcopy")

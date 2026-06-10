@@ -1,0 +1,5 @@
+config:
+  install_tree: {root: $user_cache_path/install}
+  source_cache: $user_cache_path/cache/source
+  misc_cache: $user_cache_path/cache/misc
+  license_dir: $user_cache_path/licenses

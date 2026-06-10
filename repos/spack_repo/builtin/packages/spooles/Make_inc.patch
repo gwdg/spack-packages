@@ -1,0 +1,64 @@
+diff --git a/Make.inc b/Make.inc
+index f99eb8f..d916234 100644
+--- a/Make.inc
++++ b/Make.inc
+@@ -12,7 +12,7 @@
+ # for solaris
+ #
+ # CC = gcc
+-  CC = /usr/lang-4.0/bin/cc
++  CC = mpicc
+ #
+ # for sgi
+ #
+@@ -58,13 +58,13 @@
+ #
+ #  set the purify environment (a memory monitoring tool)
+ #
+-  PURIFY = 
++#  PURIFY = 
+ # PURIFY = /usr/local/purify-4.0.1/purify
+ #
+ #  purify wouldn't work with the newest version of the gcc library,
+ #  so we had to force loading the old version
+ #
+-  PURIFY_GCC_VERSION = 
++#  PURIFY_GCC_VERSION = 
+ # PURIFY_GCC_VERSION = -V 2.7.2
+ #
+ #---------------------------------------------------------------------
+@@ -103,7 +103,7 @@
+ #  MPI install library
+ #
+ # MPI_INSTALL_DIR = 
+-  MPI_INSTALL_DIR = /usr/local/mpich-1.0.13
++#  MPI_INSTALL_DIR = /usr/local/mpich-1.0.13
+ #
+ #---------------------------------------------------------------------
+ #
+@@ -115,7 +115,7 @@
+ #
+ # for solaris
+ #
+-  MPI_LIB_PATH = -L$(MPI_INSTALL_DIR)/lib/solaris/ch_p4
++#  MPI_LIB_PATH = -L$(MPI_INSTALL_DIR)/lib/solaris/ch_p4
+ #
+ # for hp
+ #
+@@ -127,7 +127,7 @@
+ #
+ # for solaris
+ #
+-  MPI_LIBS = $(MPI_LIB_PATH) -D_REENTRANT -lmpi -lsocket -lnsl -lthread
++#  MPI_LIBS = $(MPI_LIB_PATH) -D_REENTRANT -lmpi -lsocket -lnsl -lthread
+ #
+ # for sgi
+ #
+@@ -142,6 +142,6 @@
+ #  MPI include path
+ #
+ # MPI_INCLUDE_DIR = 
+-  MPI_INCLUDE_DIR = -I$(MPI_INSTALL_DIR)/include
++#  MPI_INCLUDE_DIR = -I$(MPI_INSTALL_DIR)/include
+ #
+ #---------------------------------------------------------------------

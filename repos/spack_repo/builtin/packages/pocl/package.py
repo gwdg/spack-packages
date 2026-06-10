@@ -22,6 +22,8 @@ class Pocl(CMakePackage):
     license("MIT")
 
     version("main", branch="main")
+    version("7.1", sha256="1110057cb0736c74819ad65238655a03f7b93403a0ca60cdd8849082f515ca25")
+    version("7.0", sha256="f55caba8c3ce12bec7b683ce55104c7555e19457fc2ac72c6f035201e362be08")
     version("6.0", sha256="de9710223fc1855f833dbbf42ea2681e06aa8ec0464f0201104dc80a74dfd1f2")
     version("5.0", sha256="fd0bb6e50c2286278c11627b71177991519e1f7ab2576bd8d8742974db414549")
     version("4.0", sha256="7f4e8ab608b3191c2b21e3f13c193f1344b40aba7738f78762f7b88f45e8ce03")
@@ -60,8 +62,10 @@ class Pocl(CMakePackage):
     depends_on("llvm +clang")
     # PoCL aims to support **the latest LLVM version** at the time of PoCL release,
     # **plus the previous** LLVM version
-    depends_on("llvm @18:19", when="@master")
-    depends_on("llvm @17:18", when="@6.0")
+    depends_on("llvm @17:21", when="@master")
+    depends_on("llvm @17:21", when="@7.1")
+    depends_on("llvm @17:21", when="@7.0")
+    depends_on("llvm @17:19", when="@6.0")
     depends_on("llvm @16:17", when="@5.0")
     depends_on("llvm @15:16", when="@4.0")
     depends_on("llvm @14:15", when="@3.1")
@@ -77,17 +81,76 @@ class Pocl(CMakePackage):
     depends_on("llvm @4:5", when="@1.0")
 
     variant(
-        "distro",
-        default=False,
-        description=(
-            "Support several CPU architectures, "
-            "suitable e.g. in a build "
-            "that will be made available for download"
-        ),
+        "cpu_targets",
+        description="CPU targets to be able to build kernels for. disto means a wide compatible combination.",
+        values=disjoint_sets(
+            ("native",),
+            ("distro",),
+            (
+                # Specific architectures.
+                "broadwell",
+                "cascadelake",
+                "haswell",
+                "sapphirerapids",
+                "skylake-avx512",
+                "znver1",
+                "znver2",
+                "znver3",
+                "znver4",
+                # Generic architectures.
+                "x86-64",
+                "x86-64-v2",
+                "x86-64-v3",
+                "x86-64-v4",
+                # Feature levels.
+                "sse2",
+                "sse3",
+                "sse41",
+                "avx",
+                "avx_f16c",
+                "avx_fma4",
+                "avx2",
+                "avx512",
+            ),
+        )
+        .prohibit_empty_set()
+        .with_error("'native' or 'distro' cannot be activated along with other targets")
+        .with_default("native"),
     )
+    variant("half", default=False, description="Support half (fp16) precision.", when="@4.0:")
+    variant("cuda", default=False, description="CUDA backend.", when="@3.1:")
+    variant("level0", default=False, description="Level 0 backend.", when="@4.0:")
+    variant("client", default=False, description="Remote client support.", when="@5.0:")
+    variant("server", default=False, description="Remote server support.", when="@5.0:")
+    variant(
+        "rdma",
+        default=False,
+        description="Add support for RDMA transfer for remote client/server.",
+        when="@5:",
+    )
+    conflicts(
+        "+rdma",
+        when="~client ~server",
+        msg="+rdma support is only meaningful for +client and/or +server.",
+    )
+
+    variant("dlopen", default=False, description="Open drivers with dlopen at runtime.")
+    variant(
+        "dlopen",
+        default=True,
+        when="~client ~server",
+        description="Open drivers with dlopen at runtime.",
+    )
+    conflicts("+dlopen", when="+client", msg="+dlopen is not supported for +client")
+    conflicts("+dlopen", when="+server", msg="+dlopen is not supported for +server")
+
     variant("icd", default=False, description="Support a system-wide ICD loader")
 
     depends_on("ocl-icd", when="+icd")
+    depends_on("llvm @16:", when="+half")
+    depends_on("cuda @11:", when="+cuda")
+    depends_on("oneapi-level-zero", when="+level0")
+    depends_on("rdma-core", when="+rdma")
 
     def url_for_version(self, version):
         if version >= Version("1.0"):
@@ -102,10 +165,28 @@ class Pocl(CMakePackage):
             self.define("INSTALL_OPENCL_HEADERS", True),
             self.define("ENABLE_LLVM", True),
             self.define("STATIC_LLVM", True),
+            self.define(
+                "KERNELLIB_HOST_CPU_VARIANTS", ";".join(self.spec.variants["cpu_targets"].value)
+            ),
+            self.define_from_variant("ENABLE_LOADABLE_DRIVERS", "dlopen"),
             self.define_from_variant("ENABLE_ICD", "icd"),
         ]
-        if "+distro" in self.spec:
-            args.append(self.define("KERNELLIB_HOST_CPU_VARIANTS", "distro"))
+        # If +dlopen, we have to add {prefix}/lib64/pocl to the RPATH or else
+        # the ICD loader will not be able to find the needed libraries.
+        if "+dlopen" in self.spec:
+            rpath = self.rpath
+            rpath.append(self.prefix.lib64)
+            rpath.append(os.path.join(self.prefix.lib64, "pocl"))
+            args.append("-DCMAKE_INSTALL_RPATH=%s" % ":".join(rpath))
+        # Options for variants that only exist for certain versions.
+        if self.spec.satisfies("@3.1:"):
+            args.append(self.define_from_variant("ENABLE_CUDA", "cuda"))
+        if self.spec.satisfies("@4.0:"):
+            args.append(self.define_from_variant("ENABLE_LEVEL0", "level0"))
+        if self.spec.satisfies("@5.0:"):
+            args.append(self.define_from_variant("ENABLE_REMOTE_CLIENT", "client"))
+            args.append(self.define_from_variant("ENABLE_REMOTE_SERVER", "server"))
+            args.append(self.define_from_variant("ENABLE_RDMA", "rdma"))
         return args
 
     @run_after("install")

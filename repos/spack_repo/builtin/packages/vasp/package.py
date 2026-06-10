@@ -21,14 +21,13 @@ class Vasp(MakefilePackage, CudaPackage):
     homepage = "https://vasp.at"
     url = "file://{0}/vasp.5.4.4.pl2.tgz".format(os.getcwd())
     maintainers("snehring")
-    manual_download = True
+    # manual_download = True
 
+    version("6.6.0", sha256="9566f59b0ae2fc60f670a91153655d09dba13fe6cc6c54e9ca6bd03bbcd86384")
     version("6.5.1", sha256="a53fd9dd2a66472a4aa30074dbda44634fc663ea2628377fc01d870e37136f61")
     version("6.5.0", sha256="7836f0fd2387a6768be578f1177e795dc625f36f19015e31cab0e81154a24196")
     version("6.4.3", sha256="fe30e773f2a3e909b5e0baa9654032dfbdeff7ec157bc348cee7681a7b6c24f4")
-    version("6.4.2", sha256="b704637f7384673f91adfbc803edc5cc7fe736d9623453461f7cdc29b123410e")
     version("6.3.2", sha256="f7595221b0f9236a324ea8afe170637a578cdd5a837cc7679e7f7812f6edf25a")
-    version("6.3.1", sha256="113db53c4346287c89982f52887a65d12d246e38de7ccd024e44499c4774dc66")
     version("6.3.0", sha256="adcf83bdfd98061016baae31616b54329563aa2739573f069dd9df19c2071ad3")
 
     variant("openmp", default=False, description="Enable openmp build")
@@ -63,7 +62,7 @@ class Vasp(MakefilePackage, CudaPackage):
     depends_on("hdf5+fortran+mpi", when="+hdf5")
     depends_on("libbeef", when="+libbeef")
     depends_on("libxc~fhc+fortran", when="+libxc")
-    depends_on("wannier90", when="+wannier90")
+    depends_on("wannier90~mpi", when="+wannier90")
     # at the very least the nvhpc mpi seems required
     requires("^nvhpc+mpi+lapack+blas", when="%nvhpc")
 
@@ -113,6 +112,8 @@ class Vasp(MakefilePackage, CudaPackage):
             if spec.satisfies("+openmp"):
                 include_string += "_omp"
             make_include = join_path("arch", include_string)
+            copy(make_include, "makefile.include.dist")
+            fflags.append("-ffpe-summary=none")
         # nvhpc
         elif spec.satisfies("%nvhpc"):
             qd_root = join_path(
@@ -136,6 +137,7 @@ class Vasp(MakefilePackage, CudaPackage):
             if spec.satisfies("+cuda"):
                 include_string += "_acc"
             make_include = join_path("arch", include_string)
+            copy(make_include, "makefile.include.dist")
             omp_flag = "-mp"
             filter_file(r"^QD[ \t]*\??=.*$", f"QD = {qd_root}", make_include)
             filter_file("NVROOT[ \t]*=.*$", f"NVROOT = {nvroot}", make_include)
@@ -160,6 +162,7 @@ class Vasp(MakefilePackage, CudaPackage):
                 else:
                     include_string += "gnu"
             make_include = join_path("arch", include_string)
+            copy(make_include, "makefile.include.dist")
             filter_file("^CC_LIB[ ]{0,}=.*$", f"CC_LIB={spack_cc}", make_include)
             if spec.satisfies("@6:6.3.0"):
                 filter_file("gcc", f"{spack_fc} -Mfree", make_include, string=True)
@@ -178,7 +181,15 @@ class Vasp(MakefilePackage, CudaPackage):
             if spec.satisfies("+openmp"):
                 include_string += "_omp"
             make_include = join_path("arch", include_string)
-
+        elif spec.satisfies("%oneapi"):
+            include_string += "oneapi"
+            if spec.satisfies("+openmp"):
+                include_string += "_omp"
+            make_include = join_path("arch", include_string)
+            copy(make_include, "makefile.include.dist")
+            fflags.extend(["-assume", "byterecl"])
+            filter_file("^CC_LIB[ ]{0,}=.*$", f"CC_LIB={spack_cc}", make_include)
+            filter_file("^CXX_PARS[ ]{0,}=.*$", f"CXX_PARS={spack_cxx}", make_include)
         else:
             if spec.satisfies("+openmp"):
                 make_include = join_path("arch", f"{include_string}{spec.compiler.name}_omp")
@@ -189,7 +200,11 @@ class Vasp(MakefilePackage, CudaPackage):
                 make_include = join_path("arch", include_string + spec.compiler.name)
                 if not os.path.exists(make_include):
                     make_include = join_path("arch", f"{include_string}gnu")
+            copy(make_include, "makefile.include.dist")
             cpp_options.append('-DHOST=\\"LinuxGNU\\"')
+
+        if spec.satisfies("^[virtuals=fftw-api] intel-oneapi-mkl"):
+            incs.append(f"-I{spec['fftw-api'].prefix}/mkl/latest/include/fftw")
 
         if spec.satisfies("+openmp"):
             cpp_options.extend(["-Dsysv", "-D_OPENMP"])
@@ -294,3 +309,10 @@ class Vasp(MakefilePackage, CudaPackage):
 
     def install(self, spec, prefix):
         install_tree("bin/", prefix.bin)
+        install_tree("testsuite/", prefix.testsuite)
+        install("makefile", prefix)
+        install("makefile.include", prefix)
+        install("makefile.include.dist", prefix)
+
+    def url_for_version(self, version):
+        return "file://{0}/vasp.{1}.tgz".format(os.getcwd(), version)

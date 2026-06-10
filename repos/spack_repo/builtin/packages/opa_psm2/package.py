@@ -18,6 +18,7 @@ class OpaPsm2(MakefilePackage, CudaPackage):
 
     license("BSD-3-Clause")
 
+    version("12.0.1", sha256="e41af2d7d36a6ab67639ecbd5c1012aa20b2b464bf5cfbdac60e7eb37bfe58de")
     version("11.2.230", sha256="e56262ed9ced4a8b53540cc6370d7ec9733bd5c791a9c05251010c1bbb60c75c")
     version("11.2.228", sha256="e302afc8cd054409616d59b69e4d7f140278dc3815ae07f0fc14080fd860bd5c")
     version("11.2.206", sha256="08aa41f41bdb485ee037d3f7e32dd45e79858ce38e744d33b9db2af60e3c627a")
@@ -45,6 +46,13 @@ class OpaPsm2(MakefilePackage, CudaPackage):
         when="@11.2.68:11.2.77",
         sha256="fe31fda9aaee13acb87d178af2282446196d2cc0b21163034573706110b2e2d6",
     )
+    patch(
+        "icx.patch",
+        when="%oneapi",
+        sha256="c8aa12c1049130aa4e03ccab504e093a6aa4c011f7dbc2a8bc06c3904b7437bc",
+    )
+    patch("strlcat.patch", when="@12.0.1")
+    patch("unaligned_heap.patch", when="@12.0.1")
 
     def setup_build_environment(self, env: EnvironmentModifications) -> None:
         env.set("DESTDIR", self.prefix)
@@ -52,8 +60,14 @@ class OpaPsm2(MakefilePackage, CudaPackage):
             # this variable must be set when we use the Intel compilers to
             # ensure that the proper flags are set
             env.set("CCARCH", "icc")
+        if "%oneapi" in self.spec:
+            # this variable must be set when we use the Intel compilers to
+            # ensure that the proper flags are set
+            env.set("CCARCH", "icx")
         if "+cuda" in self.spec:
             env.set("PSM_CUDA", "1")
+        # fix static declaration of 'strlcat' follows non-static declaration
+        env.append_flags("CFLAGS", "-Wno-traditional")
 
     def edit(self, spec, prefix):
         # Change the makefile so libraries and includes are not

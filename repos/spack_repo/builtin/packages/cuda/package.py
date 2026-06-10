@@ -23,6 +23,26 @@ from spack.package import *
 #    format returned by platform.system() and 'arch' by platform.machine()
 
 _versions = {
+    "13.2.1": {
+        "Linux-aarch64": (
+            "38560e0c48eba793c883ea1ada6ad4c37b744cb5284034d16fd7ee57f95dda04",
+            "https://developer.download.nvidia.com/compute/cuda/13.2.1/local_installers/cuda_13.2.1_595.58.03_linux_sbsa.run",
+        ),
+        "Linux-x86_64": (
+            "5514a3fe7bcea92b25073c7c100c3e64e7961a7e1dbad6955adb8b59806053f0",
+            "https://developer.download.nvidia.com/compute/cuda/13.2.1/local_installers/cuda_13.2.1_595.58.03_linux.run",
+        ),
+    },
+    "13.2.0": {
+        "Linux-aarch64": (
+            "9684ebc64988f71ef1c70846cc9d158fb27950c1355bf37c8795c346346b6a72",
+            "https://developer.download.nvidia.com/compute/cuda/13.2.0/local_installers/cuda_13.2.0_595.45.04_linux_sbsa.run",
+        ),
+        "Linux-x86_64": (
+            "c599b651582c8f345ebde7bcf089b7dcfcd8afd7d3ea7f50525698c563a239d7",
+            "https://developer.download.nvidia.com/compute/cuda/13.2.0/local_installers/cuda_13.2.0_595.45.04_linux.run",
+        ),
+    },
     "13.1.1": {
         "Linux-aarch64": (
             "8adcd5d4b3e1e70f7420959b97514c0c97ec729da248d54902174c4d229bfd2c",
@@ -73,6 +93,16 @@ _versions = {
             "https://developer.download.nvidia.com/compute/cuda/13.0.0/local_installers/cuda_13.0.0_580.65.06_linux.run",
         ),
     },
+    "12.9.2": {
+        "Linux-aarch64": (
+            "bd35ec0cbdbc838fcb2c6746e4f50745eaf216c91ef75e5227880260efff3856",
+            "https://developer.download.nvidia.com/compute/cuda/12.9.2/local_installers/cuda_12.9.2_575.57.08_linux_sbsa.run",
+        ),
+        "Linux-x86_64": (
+            "8639beb33a5ef63d8747e33ba1537aee934c947e9cd33bb7466ad466b127e9f4",
+            "https://developer.download.nvidia.com/compute/cuda/12.9.2/local_installers/cuda_12.9.2_575.57.08_linux.run",
+        ),
+    },
     "12.9.1": {
         "Linux-aarch64": (
             "64f47ab791a76b6889702425e0755385f5fa216c5a9f061875c7deed5f08cdb6",
@@ -91,6 +121,16 @@ _versions = {
         "Linux-x86_64": (
             "bbce2b760fe2096ca1c86f729e03bf377c1519add7b2755ecc4e9b0a9e07ee43",
             "https://developer.download.nvidia.com/compute/cuda/12.9.0/local_installers/cuda_12.9.0_575.51.03_linux.run",
+        ),
+    },
+    "12.8.2": {
+        "Linux-aarch64": (
+            "582285b61adf6c924f4883229e213f39b60391b56826696752fe62cd068e7e08",
+            "https://developer.download.nvidia.com/compute/cuda/12.8.2/local_installers/cuda_12.8.2_570.211.01_linux_sbsa.run",
+        ),
+        "Linux-x86_64": (
+            "836e498681966cf44b6b9fb34d65f6724fe9a8d1b64470a040d46d12421cde22",
+            "https://developer.download.nvidia.com/compute/cuda/12.8.2/local_installers/cuda_12.8.2_570.211.01_linux.run",
         ),
     },
     "12.8.1": {
@@ -785,15 +825,11 @@ class Cuda(Package):
         description="Allow unsupported host compiler and CUDA version combinations",
     )
 
-    # depends on libxml2.so.2
-    depends_on("libxml2@:2.13", when="@10.1.243:")
+    depends_on("libxml2", when="@10.1.243:")
     # cuda-gdb needed libncurses.so.5 before 11.4.0
     # see https://docs.nvidia.com/cuda/archive/11.3.1/cuda-gdb/index.html#common-issues-oss
     # see https://docs.nvidia.com/cuda/archive/11.4.0/cuda-gdb/index.html#release-notes
     depends_on("ncurses abi=5", type="run", when="@:11.3.99+dev")
-
-    depends_on("gzip", type="build")
-    depends_on("coreutils", type="build")
 
     provides("opencl@:1.2", when="@7:")
     provides("opencl@:1.1", when="@:6")
@@ -864,7 +900,7 @@ class Cuda(Package):
             os.makedirs(os.path.join(prefix, "src"))
             symlink(includedir, os.path.join(prefix, "include"))
 
-        install_shell = which("sh", required=True)
+        install_shell = which("sh")
 
         if self.spec.satisfies("@:8.0.61"):
             # Perl 5.26 removed current directory from module search path.
@@ -904,14 +940,24 @@ class Cuda(Package):
 
     @property
     def libs(self):
-        libs = find_libraries("libcudart", root=self.prefix, shared=True, recursive=True)
-
         filtered_libs = []
         # CUDA 10.0 provides Compatability libraries for running newer versions
         # of CUDA with older drivers. These do not work with newer drivers.
-        for lib in libs:
+        #
+        # Add all non-stub libraries while building a set of the filenames for
+        # later exclusion.
+        non_stub_libs = set()
+        for lib in find_libraries("*", root=self.prefix, shared=True, recursive=True):
             parts = lib.split(os.sep)
             if "compat" not in parts and "stubs" not in parts:
+                filtered_libs.append(lib)
+                non_stub_libs.add(parts[-1])
+        # Add all stub libraries that don't have a non-stub version.
+        for lib in find_libraries(
+            os.path.join("stubs", "*"), root=self.prefix, shared=True, recursive=True
+        ):
+            parts = lib.split(os.sep)
+            if "compat" not in parts and parts[-1] not in non_stub_libs:
                 filtered_libs.append(lib)
         return LibraryList(filtered_libs)
 

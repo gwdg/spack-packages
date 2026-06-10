@@ -42,7 +42,7 @@ class Amdlibflame(CMakePackage, LibflameBase):
     _name = "amdlibflame"
     homepage = "https://www.amd.com/en/developer/aocl/blis.html#libflame"
     url = "https://github.com/amd/libflame/archive/3.0.tar.gz"
-    git = "https://github.com/amd/amdlibflame"
+    git = "https://github.com/amd/libflame"
 
     maintainers("amd-toolchain-support")
 

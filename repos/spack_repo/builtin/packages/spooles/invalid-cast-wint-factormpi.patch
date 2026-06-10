@@ -1,0 +1,13 @@
+diff --git a/MPI/src/factorMPI.c b/MPI/src/factorMPI.c
+index 2bd315c..0c13d8a 100644
+--- a/MPI/src/factorMPI.c
++++ b/MPI/src/factorMPI.c
+@@ -665,7 +665,7 @@ msg->info[1] =   0  ;
+ msg->info[2] =   0  ;
+ msg->base    = NULL ;
+ msg->chv     = NULL ;
+-msg->req     = NULL ;
++msg->req     =   0  ;
+ msg->next    = NULL ;
+ 
+ return ; }

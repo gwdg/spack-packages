@@ -159,6 +159,7 @@ class Libfabric(AutotoolsPackage, CudaPackage, ROCmPackage):
 
     depends_on("c", type="build")  # generated
 
+    depends_on("rdma-core", when="fabrics=opx")
     depends_on("rdma-core", when="fabrics=verbs")
     depends_on("rdma-core", when="@1.10.0: fabrics=efa")
     depends_on("opa-psm2", when="fabrics=psm2")
@@ -239,7 +240,7 @@ class Libfabric(AutotoolsPackage, CudaPackage, ROCmPackage):
 
     @when("@main")
     def autoreconf(self, spec, prefix):
-        bash = which("bash", required=True)
+        bash = which("bash")
         bash("./autogen.sh")
 
     def configure_args(self):
@@ -265,8 +266,12 @@ class Libfabric(AutotoolsPackage, CudaPackage, ROCmPackage):
 
         for fabric in [f if isinstance(f, str) else f[0].value for f in self.fabrics]:
             if f"fabrics={fabric}" in self.spec:
-                if fabric == "xpmem":
-                    args.append(f"--enable-xpmem={self.spec['xpmem'].prefix}")
+                if fabric in {"ucx", "xpmem"}:
+                    args.append(f"--enable-{fabric}={self.spec[fabric].prefix}")
+                elif fabric in {"efa", "opx", "verbs"}:
+                    args.append(f"--enable-{fabric}={self.spec['rdma-core'].prefix}")
+                    if fabric == "opx" and self.spec.satisfies("@2.4.0:"):
+                        args.append(f"--enable-{fabric}-hfisvc={self.spec['rdma-core'].prefix}")
                 elif fabric == "cxi":
                     args.append(f"--with-json-c={self.spec['json-c'].prefix}")
                     args.append(f"--with-curl={self.spec['curl'].prefix}")

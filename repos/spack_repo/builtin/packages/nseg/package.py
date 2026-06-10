@@ -37,6 +37,8 @@ class Nseg(MakefilePackage):
             placement=source,
         )
 
+    depends_on("c")
+
     build_directory = "nseg"
 
     @run_before("build")

@@ -71,6 +71,12 @@ class Pmix(AutotoolsPackage):
         when="@4:5.0.4",
         description="Allow a PMIx server to request services from a system-level REST server",
     )
+    variant(
+        "pnet-opa",
+        default=False,
+        when="@5.0.8:6.1.0",
+        description="Restores pnet/opa component (backport)",
+    )
 
     depends_on("c", type="build")
     depends_on("pkgconfig", type="build")
@@ -98,10 +104,13 @@ class Pmix(AutotoolsPackage):
     depends_on("py-setuptools", when="+python")
     depends_on("munge", when="+munge")
 
+    patch("pnet-opa.patch", when="+pnet-opa")
+
     def autoreconf(self, spec, prefix):
         """Only needed when building from git checkout"""
         # If configure exists nothing needs to be done
-        if os.path.exists(self.configure_abs_path):
+        # Except if we patched in another component like pnet-opa
+        if os.path.exists(self.configure_abs_path) and not spec.satisfies("+pnet-opa"):
             return
         # Else bootstrap with autotools
         perl = which("perl", required=True)

@@ -31,7 +31,7 @@ class Imod(MakefilePackage, CudaPackage):
     depends_on("fortran", type="build")
     depends_on("java@17:")
 
-    depends_on("qt@5.12:")  # Can do with 4.6:, but they themselves recommend 5.12+
+    depends_on("qt@5.12: +opengl")  # Can do with 4.6:, but they themselves recommend 5.12+
     depends_on("cuda", when="+cuda")
     depends_on("libtiff@4:")
     depends_on("fftw@3:", when="+fftw")
@@ -51,8 +51,14 @@ class Imod(MakefilePackage, CudaPackage):
             filter_file(r"-arch sm_\d{2}", cuda_flags, "configure")
 
     def flag_handler(self, name: str, flags: List[str]):
+        if name == "cflags":
+            flags.append("-Wno-incompatible-pointer-types")
+            if self.spec.satisfies("@:5.2.3 %gcc@15:"):
+                flags.append("-std=gnu17")
         if name == "fflags":
             flags.append("-fallow-argument-mismatch")
+        if name == "ldflags":
+            flags.append("-lrt")
         return (flags, None, None)
 
     def setup_build_environment(self, env: EnvironmentModifications) -> None:

@@ -19,7 +19,9 @@ class Aom(CMakePackage):
 
     depends_on("c", type="build")
     depends_on("cxx", type="build")
+    depends_on("git", type="build")
     depends_on("nasm", type="build")
+    depends_on("perl", type="build")
 
     def cmake_args(self):
         args = []

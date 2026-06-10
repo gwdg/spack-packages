@@ -1,0 +1,11 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6ce0444..05b2171 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -834,3 +834,5 @@ add_custom_target(
+   WORKING_DIRECTORY ${preCICE_SOURCE_DIR}
+   USES_TERMINAL
+   )
++
++set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+

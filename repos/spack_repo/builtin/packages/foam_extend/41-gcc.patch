@@ -1,0 +1,13 @@
+diff --git a/src/foam/containers/Lists/PackedList/PackedList.H b/src/foam/containers/Lists/PackedList/PackedList.H
+index c55e522fe..7c8c60ccc 100644
+--- a/src/foam/containers/Lists/PackedList/PackedList.H
++++ b/src/foam/containers/Lists/PackedList/PackedList.H
+@@ -147,7 +147,7 @@ template<unsigned nBits=1>
+ class PackedList
+ :
+     public PackedListCore,
+-    private List<unsigned int>
++    public List<unsigned int>
+ {
+ protected:
+ 

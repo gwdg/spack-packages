@@ -42,3 +42,10 @@ class Ncview(AutotoolsPackage):
             return "https://cirrus.ucsd.edu/~pierce/ncview/ncview-2.1.9.tar.gz"
         else:
             return "ftp://cirrus.ucsd.edu/pub/ncview/ncview-2.1.7.tar.gz"
+
+    def setup_build_environment(self, env: EnvironmentModifications) -> None:
+        super().setup_build_environment(env)
+
+        if self.spec.satisfies("@:2.1.9 %gcc@15:"):
+            # gcc@15: is -std=gnu23 by default
+            env.append_flags("CFLAGS", "-std=gnu17")

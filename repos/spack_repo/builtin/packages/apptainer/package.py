@@ -115,3 +115,13 @@ class Apptainer(SingularityBase):
                 symlink(
                     binary, join_path(self.spec.prefix.libexec.apptainer.bin, basename(binary))
                 )
+
+    @run_after("install")
+    def patch_apptainer_config(self):
+        with working_dir(self.spec.prefix + "/etc/apptainer"):
+            filter_file(r"^allow setuid = .*", "allow setuid = no", "apptainer.conf")
+            filter_file(r"^mksquashfs procs = .*", "mksquashfs procs = 4", "apptainer.conf")
+            filter_file(r"^# mksquashfs mem = .*", "mksquashfs mem = 16G", "apptainer.conf")
+            filter_file(
+                r"^download concurrency = .*", "download concurrency = 1", "apptainer.conf"
+            )
