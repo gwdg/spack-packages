@@ -184,9 +184,3 @@ class Gettext(AutotoolsPackage, GNUMirrorPackage):
         # In addition to prefix/share/aclocal, newer versions of gettext also
         # install m4 files into prefix/share/gettext/m4.
         env.append_path("ACLOCAL_PATH", self.prefix.share.gettext.m4)
-
-    def setup_build_environment(self, env: EnvironmentModifications) -> None:
-        super().setup_build_environment(env)
-
-        if self.spec.satisfies("%intel"):
-            env.append_flags("CFLAGS", "-std=c11")
