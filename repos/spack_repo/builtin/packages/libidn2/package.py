@@ -38,8 +38,7 @@ class Libidn2(AutotoolsPackage, GNUMirrorPackage):
     # in-source build fails
     build_directory = "spack-build"
 
-    def setup_build_environment(self, env: EnvironmentModifications) -> None:
-        super().setup_build_environment(env)
-
-        if self.spec.satisfies("%intel"):
-            env.append_flags("CFLAGS", "-std=c11")
+    def flag_handler(self, name, flags):
+        if name == "cflags" and self.spec.satisfies("%intel"):
+            flags.append("-std=c11")
+        return (flags, None, None)
